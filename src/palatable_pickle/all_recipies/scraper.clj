@@ -14,10 +14,15 @@
    {:item "mm-recipes-details__item"
     :label "mm-recipes-details__label"
     :value "mm-recipes-details__value"}
-   :ingredient-item "mm-recipes-structured-ingredients__list-item"})
+   })
    
 (def recipe-target-xpath
-  {:recipe-steps "//div[contains(@class,'mm-recipes-steps')]/ol/li/p"
+  {:ingredient-item 
+   {:item "//.[contains(@class,'mm-recipes-structured-ingredients__list-item')]"
+    :ammount "./.[1]"
+    :unit "./.[2]"
+    :ingredient "./.[3]"}
+   :recipe-steps "//div[contains(@class,'mm-recipes-steps')]/ol/li/p"
    :servings "//tr[contains(@class,'mm-recipes-nutrition-facts-label__servings')]/th/span[2]"
    :calories "//tr[contains(@class,'mm-recipes-nutrition-facts-label__calories')]/th/span[2]"
    :nutritional-facts 
