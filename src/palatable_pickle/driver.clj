@@ -6,12 +6,11 @@
             ChromeDriverService)
            (org.openqa.selenium.remote CapabilityType)))
 
-(defn build-driver [] 
+(defn build-driver [port-number] 
   (let [^ChromeDriverService service (-> (ChromeDriverService$Builder.)
-                                         (.usingPort 4444)
+                                         (.usingPort port-number)
                                          (.build))
-        ^ChromeOptions chrome-opts (doto (ChromeOptions.) 
-                                     (.addArguments ["--no-sandbox"])
-                                     (.setCapability CapabilityType/ACCEPT_INSECURE_CERTS true)
-                                     )]
-    {:driver (ChromeDriver. service chrome-opts)}))
+        ^ChromeOptions chrome-opts (doto (ChromeOptions.)
+                                     (.addArguments ["--no-sandbox" "--headless"])
+                                     (.setCapability CapabilityType/ACCEPT_INSECURE_CERTS true))]
+    (ChromeDriver. service chrome-opts)))
