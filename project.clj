@@ -5,7 +5,8 @@
             :url "https://www.eclipse.org/legal/epl-2.0/"}
   :dependencies [[org.clojure/clojure "1.11.1"]
                  [org.seleniumhq.selenium/selenium-java "4.23.0"]
-                 [org.seleniumhq.selenium/selenium-chrome-driver "4.23.0"]]
+                 [org.seleniumhq.selenium/selenium-chrome-driver "4.23.0"]
+                 [prismatic/schema "1.4.1"]]
   :main ^:skip-aot palatable-pickle.core
   :target-path "target/%s"
   
