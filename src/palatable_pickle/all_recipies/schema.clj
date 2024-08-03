@@ -4,10 +4,22 @@
 (s/defschema Link {:title s/Str
                  :href s/Str})
 
-(s/defschema Recipe
+(s/defschema Page
   {:title s/Str
+   :id s/Int
+   :key s/Keyword
    :url s/Str
+   :menu [Link]
    :breadcrumb [Link]
+   :related [Link]})
+
+(s/defschema List
+  {:page Page
+   :breadcrumb-keys [s/Keyword]
+   :list [Link]})
+
+(s/defschema Recipe
+  {:page Page
    :servings s/Int
    :calories s/Int
    :details {s/Str s/Str}
@@ -19,8 +31,3 @@
                         :ammount s/Str
                         :percent s/Str}]})
 
-(s/defschema List
-  {:title s/Str
-   :url s/Str
-   :breadcrumb [Link]
-   :links [Link]})

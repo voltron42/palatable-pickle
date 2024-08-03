@@ -1,49 +1,32 @@
-(ns palatable-pickle.all-recipies.scraper)
+(ns palatable-pickle.all-recipies.scraper 
+  (:require [clojure.pprint :as pprint]
+            [palatable-pickle.all-recipies.constants :as constants]
+            [palatable-pickle.driver :as driver]))
 
-(def recipe-url-pattern
-  "https://www.allrecipes.com/recipe/{id-int}/{id-keyword}/")
+(defmulti parse-item type)
 
-(def old-url-pattern
-  "https://www.allrecipes.com/{old-id-keyword}/")
+(defmethod parse-item clojure.lang.PersistentArrayMap [item]
+  (type item))
 
-(def list-url-pattern
-  "https://www.allrecipes.com/recipes/{id-int}/{list-path-step}/..")
+(defmethod parse-item clojure.lang.PersistentVector [item]
+  (type item))
 
-(def recipe-target-classes
-  {:details 
-   {:item "mm-recipes-details__item"
-    :label "mm-recipes-details__label"
-    :value "mm-recipes-details__value"}
-   })
-   
-(def recipe-target-xpath
-  {:ingredient-item 
-   {:item "//.[contains(@class,'mm-recipes-structured-ingredients__list-item')]"
-    :ammount "./.[1]"
-    :unit "./.[2]"
-    :ingredient "./.[3]"}
-   :recipe-steps "//div[contains(@class,'mm-recipes-steps')]/ol/li/p"
-   :servings "//tr[contains(@class,'mm-recipes-nutrition-facts-label__servings')]/th/span[2]"
-   :calories "//tr[contains(@class,'mm-recipes-nutrition-facts-label__calories')]/th/span[2]"
-   :nutritional-facts 
-   {:row "//tbody[contains(@class,'')]/tr[position() > 1]"
-    :full-label "./td[1]"
-    :name "./td[1]/span"
-    :percent "./td[2]"}})
-   
-(def menu-xpath "//li[contains(@class,'mntl-fullscreen-nav__sublist-item')]/a")
+(defmethod parse-item :default [item]
+  (driver/find-element item))
 
-(def breadcrumb-xpath "//li[contains(@class,'mntl-breadcrumbs__item')]/a")
+(defn parse-page [queries]
+  (reduce-kv
+   (fn [acc k v]
+     (assoc acc k (parse-item v)))
+   {}
+   queries))
 
-(def list-page-item-xpath "//a[contains(@class,'mntl-taxonomy-nodes__link ')]")
+(defn get-page [url]
+  (driver/set-page (driver/get-driver) url)
+  (parse-page constants/queries))
 
-(def listed-card-xpath 
-  {:link "//a[contains(@class,'mntl-card-list-items')]"
-   :title "./span[contains(@class,'card__title-text')]"})
-
-(def view-recipe-button-xpath
-  "//a[span[contains(text(),'View Recipe')]]")
-
-(def article-title-xpath "//h1")
-
-(comment "")
+(defn scrape-all-recipes []
+  (let [page (get-page (:home constants/urls))
+        body (parse-page constants/queries)
+        types (set (vals body))]
+    (pprint/pprint types)))
