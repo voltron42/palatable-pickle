@@ -1,6 +1,5 @@
 (ns palatable-pickle.all-recipies.scraper 
-  (:require [clojure.pprint :as pp]
-            [clojure.set :as set]
+  (:require [clojure.set :as set]
             [palatable-pickle.all-recipies.constants :as constants]
             [palatable-pickle.driver :as driver]) 
   (:import [org.openqa.selenium NoSuchElementException]))
@@ -53,11 +52,12 @@
 
 (defn get-page [^String url]
   (println url)
-  (driver/set-page url)
-  (Thread/sleep 500)
-  (let [page (parse-page (driver/get-document) constants/queries)]
-    (driver/close-driver)
-    (assoc page :url url)))
+  (driver/using-browser
+   (fn [browser]
+     (driver/set-page browser url)
+     (Thread/sleep 500)
+     (let [page (parse-page (driver/get-document browser) constants/queries)]
+       (assoc page :url url)))))
 
 (defn get-links-from-page [page]
   (reduce

@@ -1,16 +1,7 @@
 (ns palatable-pickle.all-recipes.scraper-test 
   (:require [clojure.pprint :as pp]
-            [clojure.set :as set]
-            [clojure.string :as str]
             [clojure.test :as t]
-            [palatable-pickle.all-recipies.scraper :as scraper]
-            [palatable-pickle.driver :as driver]))
-
-(defn close-driver [f]
-  (f)
-  (driver/close-driver))
-
-(t/use-fixtures :once close-driver)
+            [palatable-pickle.all-recipies.scraper :as scraper]))
 
 (def link-types
   {:recipes "/recipe/"
