@@ -2,6 +2,6 @@
   (:require [clojure.test :refer :all]
             [palatable-pickle.core :refer :all]))
 
-(deftest a-test
+(deftest ^:core a-test
   (testing "ignore"
     (is true)))

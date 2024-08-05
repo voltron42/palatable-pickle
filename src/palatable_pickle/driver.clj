@@ -1,12 +1,12 @@
 (ns palatable-pickle.driver 
-  (:import org.openqa.selenium.By
-           (org.openqa.selenium.chrome
+  (:import (org.openqa.selenium.chrome
             ChromeDriver
             ChromeDriverService
             ChromeDriverService$Builder
             ChromeOptions)
            (org.openqa.selenium.remote CapabilityType)
-           org.openqa.selenium.WebElement))
+           org.openqa.selenium.WebElement) 
+  (:require [clojure.string :as str]))
 
 (defonce ^:private driver (atom nil))
 
@@ -21,8 +21,14 @@
 
 (defn- get-driver []
   (when (nil? @driver)
-    (reset! driver (build-driver 4444)))
-  driver)
+    (reset! driver (build-driver 4445)))
+  @driver)
+
+(defn close-driver []
+  (doto (get-driver)
+    (.close)
+    (.quit))
+  (reset! driver nil))
 
 (defn set-page [^String url]
   (-> (get-driver) (.get url)))
@@ -33,14 +39,45 @@
 (defn get-title []
   (-> (get-driver) (.getTitle)))
 
-(defn find-element [^By by]
-  (-> (get-driver) (.findElement by)))
+(defprotocol Button
+  (click [this]))
 
-(defn find-elements [^By by]
-  (mapv identity (-> (get-driver) (.findElements by))))
+(defprotocol Element
+  (get-attribute [this ^String name])
+  (get-text [this]))
 
-(defn find-child [^WebElement element ^By by]
-  (-> element (.findElement by)))
+(defn wrap-element [^WebElement element]
+  (reify Element
+    (get-attribute [_ name]
+      (-> element
+          (.getAttribute name)))
+    (get-text [_]
+      (.getText element))))
 
-(defn find-children [^WebElement element ^By by]
-  (mapv identity (-> element (.findElements by))))
+(defprotocol Searcher
+  (find-element [this by])
+  (find-elements [this by])
+  (get-element [this]))
+
+(defn wrap-element-as-searcher [^WebElement element]
+  (reify Searcher
+    (find-element [_ by]
+      (-> element
+          (.findElement by)
+          (wrap-element-as-searcher)))
+    (find-elements [_ by]
+      (->> (.findElements element by)
+           (mapv wrap-element-as-searcher)))
+    (get-element [_]
+      (wrap-element element))))
+
+(defn get-document []
+  (reify Searcher
+    (find-element [_ by]
+      (-> (get-driver)
+          (.findElement by)
+          (wrap-element-as-searcher)))
+    (find-elements [_ by]
+      (->> (.findElements (get-driver) by)
+           (mapv wrap-element-as-searcher)))
+    (get-element [_] nil)))
