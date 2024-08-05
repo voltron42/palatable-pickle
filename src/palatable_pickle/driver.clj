@@ -30,6 +30,8 @@
     (.quit))
   (reset! driver nil))
 
+
+
 (defn set-page [^String url]
   (-> (get-driver) (.get url)))
 

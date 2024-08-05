@@ -1,5 +1,6 @@
 (ns palatable-pickle.all-recipies.scraper 
   (:require [clojure.pprint :as pp]
+            [clojure.set :as set]
             [palatable-pickle.all-recipies.constants :as constants]
             [palatable-pickle.driver :as driver]) 
   (:import [org.openqa.selenium NoSuchElementException]))
@@ -54,7 +55,9 @@
   (println url)
   (driver/set-page url)
   (Thread/sleep 500)
-  (parse-page (driver/get-document) constants/queries))
+  (let [page (parse-page (driver/get-document) constants/queries)]
+    (driver/close-driver)
+    (assoc page :url url)))
 
 (defn get-links-from-page [page]
   (reduce
@@ -63,5 +66,21 @@
    (sorted-set)
    constants/link-lists))
 
+(defn get-pages [urls]
+  (let [pages (mapv get-page urls)]
+    {:pages pages
+     :links (reduce #(into %1 (get-links-from-page %2)) (sorted-set) pages)}))
+
 (defn scrape-all-recipes []
-  (get-page (:home constants/urls)))
+  (let [url (:home constants/urls)
+        home-page (get-page url)
+        home-page-links (get-links-from-page home-page)
+        {pages-1 :pages links-1 :links} (get-pages home-page-links)
+        visited-1 (set/union #{url} home-page-links)
+        target-links-1 (set/difference links-1 visited-1)
+        {pages-2 :pages links-2 :links} (get-pages target-links-1)
+        visited-2 (set/union visited-1 target-links-1)
+        target-links-2 (set/difference links-2 visited-2)
+        all-pages (into [home-page] pages-1 pages-2)]
+    {:next-links target-links-2
+     :pages all-pages}))

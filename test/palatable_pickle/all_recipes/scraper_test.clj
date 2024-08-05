@@ -22,14 +22,6 @@
 
 (t/deftest ^:scraper test-get-page
   (t/testing "test get-page"
-    (let [page (scraper/scrape-all-recipes)
-          links (scraper/get-links-from-page page)
-          cat-links (reduce-kv
-                     #(assoc %1 %2 (into (sorted-set) (filter (fn [link] (not (nil? (str/index-of link %3)))) links)))
-                     {}
-                     link-types)
-          all-cat-links (reduce into (sorted-set) (vals cat-links))
-          all-links (assoc cat-links :other (set/difference links all-cat-links))
-          recipe (-> all-links :recipes first scraper/get-page)]
-      (pp/pprint recipe)
-      (pp/pprint all-links))))
+    (let [{next-links :next-links pages :pages} (scraper/scrape-all-recipes)]
+      (pp/pprint {:links (count next-links)
+                  :pages (count pages)}))))

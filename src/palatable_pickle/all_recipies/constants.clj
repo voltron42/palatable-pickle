@@ -1,9 +1,19 @@
 (ns palatable-pickle.all-recipies.constants 
   (:require [clojure.edn :as edn]
-            [clojure.pprint :as pp]
             [clojure.string :as str]
             [palatable-pickle.driver :as driver]) 
   (:import [org.openqa.selenium By]))
+
+(def fractions {"⅛" 1/8
+                "¼" 1/4
+                "⅓" 1/3
+                "⅜" 3/8
+                "½" 1/2
+                "⅝" 5/8
+                "⅔" 2/3
+                "¾" 3/4
+                "⅞" 7/8
+                })
 
 (def urls 
   {:home "https://www.allrecipes.com/"
@@ -25,7 +35,8 @@
    :menu {:query [(By/xpath "//li[contains(@class,'mntl-fullscreen-nav__sublist-item')]/a")]
           :parser get-link}
    :breadcrumb {:query [(By/xpath "//li[contains(@class,'mntl-breadcrumbs__item')]/a")]
-                :parser get-link}
+                :child {:label (By/className "link__wrapper")
+                        :link #(driver/get-attribute % "href")}}
    :list-page-item {:query [(By/xpath "//a[contains(@class,'mntl-taxonomy-nodes__link ')]")]
                     :parser get-link}
    :listed-card {:query [(By/xpath "//a[contains(@class,'mntl-card-list-items')]")]
