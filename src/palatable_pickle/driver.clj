@@ -52,7 +52,7 @@
       (-> element
           (.getAttribute name)))
     (get-text [_]
-      (.getText element))))
+      (str/trim (.getAttribute element "innerHTML")))))
 
 (defprotocol Searcher
   (find-element [this by])

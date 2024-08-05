@@ -1,5 +1,6 @@
 (ns palatable-pickle.all-recipies.scraper 
-  (:require [palatable-pickle.all-recipies.constants :as constants]
+  (:require [clojure.pprint :as pp]
+            [palatable-pickle.all-recipies.constants :as constants]
             [palatable-pickle.driver :as driver]) 
   (:import [org.openqa.selenium NoSuchElementException]))
 
@@ -10,7 +11,7 @@
 (defn parse-page [searcher queries]
   (reduce-kv
    (fn [acc k v]
-     (let [query (if (map? v) 
+     (let [query (if (or (fn? v) (map? v))
                    v
                    {:query v
                     :parser driver/get-text})
@@ -50,7 +51,9 @@
     (catch NoSuchElementException _ [])))
 
 (defn get-page [^String url]
+  (println url)
   (driver/set-page url)
+  (Thread/sleep 500)
   (parse-page (driver/get-document) constants/queries))
 
 (defn get-links-from-page [page]

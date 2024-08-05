@@ -17,4 +17,4 @@
           links (scraper/get-links-from-page page)
           recipes (filter #(not (nil? (str/index-of % "/recipe/"))) links)
           recipe (scraper/get-page (first recipes))]
-      (pp/pprint recipe))))
+      (pp/pprint (dissoc recipe :menu :breadcrumb :recipe-details :recipe-steps :article-title :calories :servings :nutritional-facts)))))

@@ -1,5 +1,6 @@
 (ns palatable-pickle.all-recipies.constants 
   (:require [clojure.edn :as edn]
+            [clojure.pprint :as pp]
             [clojure.string :as str]
             [palatable-pickle.driver :as driver]) 
   (:import [org.openqa.selenium By]))
@@ -36,21 +37,18 @@
                     :child {:label (By/className "mm-recipes-details__label")
                             :value (By/className "mm-recipes-details__value")}}
    :ingredient-item {:query [(By/className "mm-recipes-structured-ingredients__list-item")]
-                     :child {:ammount (By/xpath "./.[1]")
-                             :unit (By/xpath "./.[2]")
-                             :ingredient (By/xpath "./.[3]")}}
+                     :child {:quantity (By/xpath "span[data-ingredient-quantity]")
+                             :unit (By/xpath "span[data-ingredient-unit]")
+                             :name (By/xpath "span[data-ingredient-name]")}}
    :recipe-steps [(By/xpath "//div[contains(@class,'mm-recipes-steps')]/ol/li/p")]
    :servings {:query (By/xpath "//tr[contains(@class,'mm-recipes-nutrition-facts-label__servings')]/th/span[2]")
               :parser parse-number}
    :calories {:query (By/xpath "//tr[contains(@class,'mm-recipes-nutrition-facts-label__calories')]/th/span[2]")
               :parser parse-number}
-   :nutritional-facts {:query (By/xpath "//tbody[contains(@class,'')]/tr[position() > 1]")
-                       :child {:full-label (By/xpath "./td[1]")
-                               :name (By/xpath "./td[1]/span")
-                               :percent (By/xpath "./td[2]")}
-                       :parser (fn [{full-label :full-label name :name percent :percent}]
-                                 (let [value (-> full-label (str/replace name "") (str/trim))]
-                                   {:name name
-                                    :value value
-                                    :percent percent}))}})
+   :nutritional-facts {:query [(By/xpath "//tbody[contains(@class,'mm-recipes-nutrition-facts-label__table-body')]/tr[position() > 1]")]
+                       :child {:name (By/xpath "td[1]/span")
+                               :quantity {:query (By/xpath "td[1]")
+                                          :parser #(let [text (driver/get-text %)]
+                                                     (str/trim (subs text (+ (str/index-of text "</span>") (count "</span>")))))}
+                               :percent (By/xpath "td[2]")}}})
    
