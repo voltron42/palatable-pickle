@@ -29,17 +29,17 @@
    :list-page-item {:query [(By/xpath "//a[contains(@class,'mntl-taxonomy-nodes__link ')]")]
                     :parser get-link}
    :listed-card {:query [(By/xpath "//a[contains(@class,'mntl-card-list-items')]")]
-                       :child {:title (By/xpath "./span[contains(@class,'card__title-text')]")
-                               :link #(driver/get-attribute % "href")}}
+                 :child {:title (By/className "card__title-text")
+                         :link #(driver/get-attribute % "href")}}
    :view-recipe-button {:query (By/xpath "//a[span[contains(text(),'View Recipe')]]")
                         :parser get-link}
    :recipe-details {:query [(By/className "mm-recipes-details__item")]
                     :child {:label (By/className "mm-recipes-details__label")
                             :value (By/className "mm-recipes-details__value")}}
    :ingredient-item {:query [(By/className "mm-recipes-structured-ingredients__list-item")]
-                     :child {:quantity (By/xpath "span[data-ingredient-quantity]")
-                             :unit (By/xpath "span[data-ingredient-unit]")
-                             :name (By/xpath "span[data-ingredient-name]")}}
+                     :child {:quantity (By/xpath ".//span[@data-ingredient-quantity]")
+                             :unit (By/xpath ".//span[@data-ingredient-unit]")
+                             :name (By/xpath ".//span[@data-ingredient-name]")}}
    :recipe-steps [(By/xpath "//div[contains(@class,'mm-recipes-steps')]/ol/li/p")]
    :servings {:query (By/xpath "//tr[contains(@class,'mm-recipes-nutrition-facts-label__servings')]/th/span[2]")
               :parser parse-number}
