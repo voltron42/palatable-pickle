@@ -1,4 +1,4 @@
-(ns palatable-pickle.all-recipies.schema
+(ns palatable-pickle.all-recipes.schema
   (:require [schema.core :as s]))
 
 (s/defschema Link {:title s/Str

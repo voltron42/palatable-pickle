@@ -6,7 +6,8 @@
   :dependencies [[org.clojure/clojure "1.11.4"]
                  [org.seleniumhq.selenium/selenium-java "4.23.0"]
                  [org.seleniumhq.selenium/selenium-chrome-driver "4.23.0"]
-                 [prismatic/schema "1.4.1"]]
+                 [prismatic/schema "1.4.1"]
+                 [clj-time "0.15.2"]]
   :main ^:skip-aot palatable-pickle.core
   :target-path "target/%s"
   
