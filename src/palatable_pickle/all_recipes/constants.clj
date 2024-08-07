@@ -1,7 +1,8 @@
-(ns palatable-pickle.all-recipies.constants 
+(ns palatable-pickle.all-recipes.constants 
   (:require [clojure.edn :as edn]
             [clojure.string :as str]
-            [palatable-pickle.driver :as driver]) 
+            [palatable-pickle.driver :as driver]
+            [clojure.test :as t]) 
   (:import [org.openqa.selenium By]))
 
 (def fractions {"⅛" 1/8
@@ -20,6 +21,91 @@
    :recipe-pattern "https://www.allrecipes.com/recipe/{id-int}/{id-keyword}/"
    :old-pattern "https://www.allrecipes.com/{old-id-keyword}/"
    :list-pattern "https://www.allrecipes.com/recipes/{id-int}/{list-path-step}/.."})
+
+(defmulti get-page-identifiers-by-type first)
+
+(defmulti get-full-id-from-page-identifiers :page-type)
+
+(defmethod get-page-identifiers-by-type nil [_] {:page-type :home})
+
+(defmethod get-full-id-from-page-identifiers :home [_] "home")
+
+(defmethod get-page-identifiers-by-type :recipe 
+  [[page-type recipe-id recipe-key]] 
+  {:page-type page-type 
+   :recipe-id recipe-id 
+   :recipe-key recipe-key})
+
+(defmethod get-full-id-from-page-identifiers :recipe 
+  [{:keys [page-type recipe-id recipe-key]}] 
+  (str/join "_" [(name page-type) recipe-id (name recipe-key)]))
+
+(defmethod get-page-identifiers-by-type :recipes
+  [[_ recipe-list-id & recipe-list-path]] 
+  {:page-type :recipe-list 
+   :recipe-list-id recipe-list-id 
+   :recipe-list-path (vec recipe-list-path)})
+
+(defmethod get-full-id-from-page-identifiers :recipe-list
+  [{:keys [recipe-list-id recipe-list-path]}] 
+  (str/join "_" ["recipe-list" recipe-list-id (name (last recipe-list-path))]))
+
+(defmethod get-page-identifiers-by-type :article
+  [[page-type & id-path]] 
+  {:page-type page-type 
+   :id-path id-path})
+
+(defmethod get-full-id-from-page-identifiers :article 
+  [{:keys [page-type id-path]}] 
+  (str/join "_" (into [(name page-type)] (mapv name id-path))))
+
+(defmethod get-page-identifiers-by-type :food-news-trends
+  [[page-type & id-path]] 
+  {:page-type page-type 
+   :id-path id-path})
+
+(defmethod get-full-id-from-page-identifiers :food-news-trends 
+  [{:keys [page-type id-path]}] 
+  (str/join "_" (into [(name page-type)] (mapv name id-path))))
+
+(defmethod get-page-identifiers-by-type :kitchen-tips
+  [[page-type & id-path]] 
+  {:page-type page-type 
+   :id-path id-path})
+
+(defmethod get-full-id-from-page-identifiers :kitchen-tips 
+  [{:keys [page-type id-path]}] 
+  (str/join "_" (into [(name page-type)] (mapv name id-path))))
+
+(defmethod get-page-identifiers-by-type :gallery
+  [[page-type gallery-key]] 
+  {:page-type page-type 
+   :gallery-key gallery-key})
+
+(defmethod get-full-id-from-page-identifiers :gallery
+  [{:keys [page-type gallery-key]}] 
+  (str/join "_" (mapv name [page-type gallery-key])))
+
+(defmethod get-page-identifiers-by-type :default
+  [[page-key]] 
+  {:page-type :other 
+   :page-key page-key})
+
+(defmethod get-full-id-from-page-identifiers :other
+  [{:keys [page-type page-key]}] 
+  (str/join "_" (mapv name [page-type page-key])))
+
+(defn get-page-identifiers [url]
+  (let [path (->> (str/split url #"/")
+                  (drop 3)
+                  (mapv #(let [step (try
+                                      (edn/read-string %)
+                                      (catch Throwable _
+                                        (symbol %)))]
+                           (if (symbol? step)
+                             (keyword (name step))
+                             step))))]
+    (get-page-identifiers-by-type path)))
 
 (defn get-link [elem]
   {:label (driver/get-text elem)

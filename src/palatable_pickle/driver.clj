@@ -1,12 +1,13 @@
 (ns palatable-pickle.driver 
+  (:require [clojure.pprint :as pp]
+            [clojure.string :as str]) 
   (:import (org.openqa.selenium.chrome
             ChromeDriver
             ChromeDriverService
             ChromeDriverService$Builder
             ChromeOptions)
            (org.openqa.selenium.remote CapabilityType)
-           org.openqa.selenium.WebElement) 
-  (:require [clojure.string :as str]))
+           org.openqa.selenium.WebElement))
 
 (defn- build-driver [port-number] 
   (let [^ChromeDriverService service (-> (ChromeDriverService$Builder.)
@@ -80,6 +81,12 @@
       (func browser)
       (finally
         (wrap-retries
-         #(doto driver
-            (.close)
-            (.quit)))))))
+         #(try
+            (.close driver)
+            (catch Throwable t
+              (pp/pprint t))
+            (finally
+              (try
+                (.quit driver)
+                (catch Throwable t
+                  (pp/pprint t))))))))))
