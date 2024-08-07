@@ -2,11 +2,11 @@
   (:gen-class) 
   (:require [clojure.java.io :as io]
             [clojure.pprint :as pp]
-            [palatable-pickle.all-recipes.constants :as constants]
             [palatable-pickle.scraper.scraper :as scraper]
             [clojure.edn :as edn]
             [clojure.set :as set]
-            [clj-time.core :as t]))
+            [clj-time.core :as t]
+            [palatable-pickle.all-recipes.constants :as constants]))
 
 (defn read-and-publish-single-page [url]
   (let [page (scraper/get-page url)
@@ -29,9 +29,10 @@
               :links (into links page-links)}))
          {:urls #{}
           :links #{}}
-         files)
-        result (set/difference links urls)]
-    result))
+         files)]
+    (if (empty? files)
+      #{(:home constants/urls)}
+      (set/difference links urls))))
 
 (def default-minutes 1)
 

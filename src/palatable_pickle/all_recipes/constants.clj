@@ -1,9 +1,11 @@
 (ns palatable-pickle.all-recipes.constants 
   (:require [clojure.edn :as edn]
             [clojure.string :as str]
-            [palatable-pickle.driver :as driver]
-            [clojure.test :as t]) 
-  (:import [org.openqa.selenium By]))
+            [clojure.xml :as xml]
+            [clojure.zip :as zip]
+            [palatable-pickle.driver :as driver])
+  (:import [java.io ByteArrayInputStream]
+           [org.openqa.selenium By]))
 
 (def fractions {"⅛" 1/8
                 "¼" 1/4
@@ -116,6 +118,17 @@
 
 (def link-lists #{:menu :breadcrumb :list-page-item :listed-card :view-recipe-button})
 
+(defn- parse-image-from-noscript [noscript-img-xml]
+  (-> noscript-img-xml
+      (driver/get-text)
+      (.getBytes)
+      (ByteArrayInputStream.)
+      (xml/parse)
+      (zip/xml-zip)
+      (first)
+      (:attrs)
+      (:src)))
+
 (def queries
   {:article-title (By/tagName "h1")
    :menu {:query [(By/xpath "//li[contains(@class,'mntl-fullscreen-nav__sublist-item')]/a")]
@@ -127,6 +140,8 @@
                     :parser get-link}
    :listed-card {:query [(By/xpath "//a[contains(@class,'mntl-card-list-items')]")]
                  :child {:title (By/className "card__title-text")
+                         :img-src {:query (By/xpath "//div[contains(@class,'img-placeholder')]/noscript")
+                                   :parser parse-image-from-noscript}
                          :link #(driver/get-attribute % "href")}}
    :view-recipe-button {:query (By/xpath "//a[span[contains(text(),'View Recipe')]]")
                         :parser get-link}
@@ -137,7 +152,12 @@
                      :child {:quantity (By/xpath ".//span[@data-ingredient-quantity]")
                              :unit (By/xpath ".//span[@data-ingredient-unit]")
                              :name (By/xpath ".//span[@data-ingredient-name]")}}
-   :recipe-steps [(By/xpath "//div[contains(@class,'mm-recipes-steps')]/ol/li/p")]
+   :gallery {:query [(By/xpath "//figure[contains(@class,'mntl-universal-image')]/div/img")]
+             :child {:img-src #(driver/get-attribute % "data-src")}}
+   :recipe-steps {:query [(By/xpath "//div[contains(@class,'mm-recipes-steps')]/ol/li")]
+                  :child {:text (By/xpath "p")
+                          :img-src {:query (By/tagName "img")
+                                    :parser #(driver/get-attribute % "data-src")}}}
    :servings {:query (By/xpath "//tr[contains(@class,'mm-recipes-nutrition-facts-label__servings')]/th/span[2]")
               :parser parse-number}
    :calories {:query (By/xpath "//tr[contains(@class,'mm-recipes-nutrition-facts-label__calories')]/th/span[2]")
