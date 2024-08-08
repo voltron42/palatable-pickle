@@ -30,6 +30,9 @@
    #(parser (driver/get-element %))
    (parse-item searcher query)))
 
+(defmethod parse-map #{:child} [searcher {child :child}]
+  (parse-page searcher child))
+
 (defmethod parse-map #{:query :child} [searcher {query :query child :child}]
   (mapv #(parse-page % child) (parse-item searcher query)))
 
