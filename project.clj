@@ -7,7 +7,9 @@
                  [org.seleniumhq.selenium/selenium-java "4.23.0"]
                  [org.seleniumhq.selenium/selenium-chrome-driver "4.23.0"]
                  [prismatic/schema "1.4.1"]
-                 [clj-time "0.15.2"]]
+                 [clj-time "0.15.2"]
+                 [clj-http "3.13.0"]
+                 [com.github.kyleburton/clj-xpath "1.4.13"]]
   :main ^:skip-aot palatable-pickle.core
   :target-path "target/%s"
   

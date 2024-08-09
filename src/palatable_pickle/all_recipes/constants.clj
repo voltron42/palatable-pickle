@@ -2,8 +2,7 @@
   (:require [clojure.edn :as edn]
             [clojure.string :as str]
             [clojure.xml :as xml]
-            [clojure.zip :as zip]
-            [palatable-pickle.driver :as driver])
+            [clojure.zip :as zip])
   (:import [java.io ByteArrayInputStream]
            [org.openqa.selenium By]))
 
@@ -106,18 +105,22 @@
                              step))))]
     (get-page-identifiers-by-type path)))
 
+(def link-lists #{:menu :breadcrumb :list-page-item :listed-card :view-recipe-button})
+
+(defprotocol Node
+  (get-text [this])
+  (get-attribute [this attr-name]))
+
 (defn get-link [elem]
-  {:label (driver/get-text elem)
-   :link (driver/get-attribute elem "href")})
+  {:label (get-text elem)
+   :link (get-attribute elem "href")})
 
 (defn parse-number [elem]
-  (edn/read-string (driver/get-text elem)))
-
-(def link-lists #{:menu :breadcrumb :list-page-item :listed-card :view-recipe-button})
+  (edn/read-string (get-text elem)))
 
 (defn- parse-image-from-noscript [noscript-img-xml]
   (-> noscript-img-xml
-      (driver/get-text)
+      (get-text)
       (.getBytes)
       (ByteArrayInputStream.)
       (xml/parse)
@@ -127,9 +130,9 @@
       (:src)))
 
 (def card {:title (By/className "card__title-text")
-                          :img-src {:query (By/xpath "//div[contains(@class,'img-placeholder')]/noscript")
-                                    :parser parse-image-from-noscript}
-                          :link #(driver/get-attribute % "href")})
+           :img-src {:query (By/xpath "//div[contains(@class,'img-placeholder')]/noscript")
+                     :parser parse-image-from-noscript}
+           :link #(get-attribute % "href")})
 
 (def listed-card {:query [(By/xpath "//a[contains(@class,'mntl-card-list-items')]")]
                   :child card})
@@ -140,7 +143,7 @@
           :parser get-link}
    :breadcrumb {:query [(By/xpath "//li[contains(@class,'mntl-breadcrumbs__item')]/a")]
                 :child {:label (By/className "link__wrapper")
-                        :link #(driver/get-attribute % "href")}}
+                        :link #(get-attribute % "href")}}
    :view-recipe-button {:query (By/xpath "//a[span[contains(text(),'View Recipe')]]")
                         :parser get-link}
    :recipe-details {:query [(By/className "mm-recipes-details__item")]
@@ -151,7 +154,7 @@
                              :unit (By/xpath ".//span[@data-ingredient-unit]")
                              :name (By/xpath ".//span[@data-ingredient-name]")}}
    :gallery {:query [(By/xpath "//figure[contains(@class,'mntl-universal-image')]/div/img")]
-             :child {:img-src #(driver/get-attribute % "data-src")}}
+             :child {:img-src #(get-attribute % "data-src")}}
    :related-pages {:query (By/className "mntl-recirc-section__content")
                                      :child {:listed-card listed-card}}
    :recipe {:child {:recipe-details {:query [(By/className "mm-recipes-details__item")]
@@ -164,7 +167,7 @@
                     :recipe-steps {:query [(By/xpath "//div[contains(@class,'mm-recipes-steps')]/ol/li")]
                                    :child {:text (By/xpath "p")
                                            :img-src {:query (By/tagName "img")
-                                                     :parser #(driver/get-attribute % "data-src")}}}
+                                                     :parser #(get-attribute % "data-src")}}}
                     :servings {:query (By/xpath "//tr[contains(@class,'mm-recipes-nutrition-facts-label__servings')]/th/span[2]")
                                :parser parse-number}
                     :calories {:query (By/xpath "//tr[contains(@class,'mm-recipes-nutrition-facts-label__calories')]/th/span[2]")
@@ -172,7 +175,7 @@
                     :nutritional-facts {:query [(By/xpath "//tbody[contains(@class,'mm-recipes-nutrition-facts-label__table-body')]/tr[position() > 1]")]
                                         :child {:name (By/xpath "td[1]/span")
                                                 :quantity {:query (By/xpath "td[1]")
-                                                           :parser #(let [text (driver/get-text %)]
+                                                           :parser #(let [text (get-text %)]
                                                                       (str/trim (subs text (+ (str/index-of text "</span>") (count "</span>")))))}
                                                 :percent (By/xpath "td[2]")}}}}
    :recipe-list {:child {:list-page-item {:query [(By/xpath "//a[contains(@class,'mntl-taxonomy-nodes__link ')]")]

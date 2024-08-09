@@ -4,6 +4,14 @@
             [palatable-pickle.driver :as driver]) 
   (:import [org.openqa.selenium NoSuchElementException]))
 
+(defn wrap-element [searcher]
+  (let [element (driver/get-element searcher)]
+    (reify constants/Node
+      (get-text [_]
+        (driver/get-text element))
+      (get-attribute [_ attr-name]
+        (driver/get-attribute element attr-name)))))
+
 (defmulti parse-map #(set (keys %2)))
 
 (defmulti parse-item #(type %2))
@@ -14,7 +22,7 @@
      (let [query (if (or (fn? v) (map? v))
                    v
                    {:query v
-                    :parser driver/get-text})
+                    :parser constants/get-text})
            results (parse-item searcher query)
            result (if (and (vector? results) (= 1 (count results)))
                     (first results)
@@ -27,7 +35,7 @@
 
 (defmethod parse-map #{:query :parser} [searcher {query :query parser :parser}]
   (mapv
-   #(parser (driver/get-element %))
+   #(parser (wrap-element %))
    (parse-item searcher query)))
 
 (defmethod parse-map #{:child} [searcher {child :child}]
@@ -43,7 +51,7 @@
   (parse-map searcher item))
 
 (defmethod parse-item clojure.lang.IFn [searcher parser]
-  (parser (driver/get-element searcher)))
+  (parser (wrap-element searcher)))
 
 (defmethod parse-item clojure.lang.PersistentVector [searcher item]
   (reduce #(into %1 (driver/find-elements searcher %2)) [] item))
