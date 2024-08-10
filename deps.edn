@@ -1,0 +1,1 @@
+{:deps {org.w3c.tidy {:local/root "lib/jtidy-r9389/jtidy-r938.jar"}}}

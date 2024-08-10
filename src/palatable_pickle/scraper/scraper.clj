@@ -1,8 +1,8 @@
 (ns palatable-pickle.scraper.scraper 
   (:require [clojure.pprint :as pp]
             [palatable-pickle.all-recipes.constants :as constants]
-            [palatable-pickle.driver :as driver]) 
-  (:import [org.openqa.selenium NoSuchElementException]))
+            [palatable-pickle.selenium.driver :as driver]) 
+  (:import [org.openqa.selenium By NoSuchElementException]))
 
 (defn wrap-element [searcher]
   (let [element (driver/get-element searcher)]
@@ -53,12 +53,23 @@
 (defmethod parse-item clojure.lang.IFn [searcher parser]
   (parser (wrap-element searcher)))
 
+(defmulti query->by (fn [query] (.query-type query)))
+
+(defmethod query->by :tag-name [query]
+  (By/tagName (.query query)))
+
+(defmethod query->by :class-name [query]
+  (By/className (.query query)))
+
+(defmethod query->by :xpath [query]
+  (By/xpath (.query query)))
+
 (defmethod parse-item clojure.lang.PersistentVector [searcher item]
-  (reduce #(into %1 (driver/find-elements searcher %2)) [] item))
+  (reduce #(into %1 (driver/find-elements searcher (query->by %2))) [] item))
 
 (defmethod parse-item :default [searcher item]
   (try
-    [(driver/find-element searcher item)]
+    [(driver/find-element searcher (query->by item))]
     (catch NoSuchElementException _ [])))
 
 (defn get-page [^String url]

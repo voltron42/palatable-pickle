@@ -1,34 +1,26 @@
 (ns palatable-pickle.scraper.scraper2 
   (:require [clj-http.client :as client]
+            [clj-xpath.core :as xpath] 
+            [clojure.string :as str]
             [palatable-pickle.all-recipes.constants :as constants]
-            [clj-xpath.core :as xpath])
-  (:import [org.seleniumhq.selenium By$ByXPath By$ByClassName By$ByTagName]))
+            [palatable-pickle.util.xml :as xml]))
 
-(defmulti by->xpath type)
+(defmulti query->xpath #(.query-type %))
 
-(comment
-  {:className
-   {:by
-    #object[org.openqa.selenium.By$ByClassName 0x5a515e5d "By.className: show"],
-    :toString "By.className: show"},
-   :tagName
-   {:by
-    #object[org.openqa.selenium.By$ByTagName 0x5cd96b41 "By.tagName: p"],
-    :toString "By.tagName: p"},
-   :xpath
-   {:by
-    #object[org.openqa.selenium.By$ByXPath 0x3d620a1 "By.xpath: //button[contains(text(),'Submit')]"],
-    :toString "By.xpath: //button[contains(text(),'Submit')]"}})
+(defmethod query->xpath :xpath [query]
+  (.query query))
 
-(defmethod by->xpath By$ByXPath [by])
+(defmethod query->xpath :class-name [query]
+  (str "//*[contains(@class,'" (.query query) "')]"))
 
-(defmethod by->xpath By$ByClassName [by])
+(defmethod query->xpath :tag-name [query]
+  (str "//" (.query query)))
 
-(defmethod by->xpath By$ByTagName [by])
+(defn- find-elements [html query]
+  (xpath/$x (str html) (query->xpath query)))
 
-(defn- find-elements [html by])
-
-(defn- find-element [html by])
+(defn- find-element [html query]
+  (first (xpath/$x (str html) (query->xpath query))))
 
 (defn wrap-element [html]
   (let [node (xpath/$x "." html)]
@@ -59,20 +51,43 @@
    {}
    queries))
 
-(defmethod parse-item clojure.lang.PersistentArrayMap [searcher item]
-  (parse-map searcher item))
+(defmethod parse-map #{:query :parser} [html {query :query parser :parser}]
+  (mapv
+   #(parser (wrap-element %))
+   (parse-item html query)))
 
-(defmethod parse-item clojure.lang.IFn [searcher parser]
-  (parser (wrap-element searcher)))
+(defmethod parse-map #{:child} [html {child :child}]
+  (parse-page html child))
 
-(defmethod parse-item clojure.lang.PersistentVector [searcher item]
-  (reduce #(into %1 (find-elements searcher %2)) [] item))
+(defmethod parse-map #{:query :child} [html {query :query child :child}]
+  (mapv #(parse-page % child) (parse-item html query)))
 
-(defmethod parse-item :default [searcher item]
-  [(find-element searcher item)])
+(defmethod parse-map #{:query :child :parser} [html {query :query child :child parser :parser}]
+  (mapv #(parser (parse-page % child)) (parse-item html query)))
 
+(defmethod parse-item clojure.lang.PersistentArrayMap [html item]
+  (parse-map html item))
+
+(defmethod parse-item clojure.lang.IFn [html parser]
+  (parser (wrap-element html)))
+
+(defmethod parse-item clojure.lang.PersistentVector [html item]
+  (reduce #(into %1 (find-elements html %2)) [] item))
+
+(defmethod parse-item :default [html item]
+  (if-let [element (find-element html item)]
+    [element]
+    []))
 
 (defn get-page [url]
   (let [html (:body (client/get url {:accept :html}))
-        page (parse-page html constants/queries)]
+        html (str/replace html "<!DOCTYPE html>\n" "")
+        html (str/replace html "&" "&amp;")
+        doc (xml/zip-str html)
+        body (xml/get-child doc :body)
+        body (xml/exclude body :script)
+        xml (xml/node->string body)
+        _ (spit "resources/raw/body.xml" xml)
+        doc (xpath/xml->doc xml)
+        page (parse-page doc constants/queries)]
     (assoc page :url url)))

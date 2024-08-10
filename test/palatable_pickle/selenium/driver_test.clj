@@ -1,6 +1,6 @@
-(ns palatable-pickle.driver-test 
+(ns palatable-pickle.selenium.driver-test 
   (:require [clojure.test :as t]
-            [palatable-pickle.driver :as driver]))
+            [palatable-pickle.selenium.driver :as driver]))
 
 (t/deftest ^:driver test-driver
   (t/testing "testing driver"

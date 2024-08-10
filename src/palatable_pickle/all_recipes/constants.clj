@@ -2,9 +2,10 @@
   (:require [clojure.edn :as edn]
             [clojure.string :as str]
             [clojure.xml :as xml]
-            [clojure.zip :as zip])
-  (:import [java.io ByteArrayInputStream]
-           [org.openqa.selenium By]))
+            [clojure.zip :as zip]
+            [palatable-pickle.util.query :as query])
+  (:import [java.io ByteArrayInputStream])
+  (:gen-class))
 
 (def fractions {"⅛" 1/8
                 "¼" 1/4
@@ -129,65 +130,67 @@
       (:attrs)
       (:src)))
 
-(def card {:title (By/className "card__title-text")
-           :img-src {:query (By/xpath "//div[contains(@class,'img-placeholder')]/noscript")
+(def card {:title (query/->Query :class-name "card__title-text")
+           :img-src {:query (query/->Query :xpath "//div[contains(@class,'img-placeholder')]/noscript")
                      :parser parse-image-from-noscript}
            :link #(get-attribute % "href")})
 
-(def listed-card {:query [(By/xpath "//a[contains(@class,'mntl-card-list-items')]")]
+(def listed-card {:query [(query/->Query :xpath "//a[contains(@class,'mntl-card-list-items')]")]
                   :child card})
 
+(comment
+  #(let [text (get-text %)]
+     (str/trim (subs text (+ (str/index-of text "</span>") (count "</span>"))))))
+
 (def queries
-  {:article-title (By/tagName "h1")
-   :menu {:query [(By/xpath "//li[contains(@class,'mntl-fullscreen-nav__sublist-item')]/a")]
+  {:article-title (query/->Query :tag-name "h1")
+   :menu {:query [(query/->Query :xpath "//li[contains(@class,'mntl-fullscreen-nav__sublist-item')]/a")]
           :parser get-link}
-   :breadcrumb {:query [(By/xpath "//li[contains(@class,'mntl-breadcrumbs__item')]/a")]
-                :child {:label (By/className "link__wrapper")
+   :breadcrumb {:query [(query/->Query :xpath "//li[contains(@class,'mntl-breadcrumbs__item')]/a")]
+                :child {:label (query/->Query :class-name "link__wrapper")
                         :link #(get-attribute % "href")}}
-   :view-recipe-button {:query (By/xpath "//a[span[contains(text(),'View Recipe')]]")
+   :view-recipe-button {:query (query/->Query :xpath "//a[span[contains(text(),'View Recipe')]]")
                         :parser get-link}
-   :recipe-details {:query [(By/className "mm-recipes-details__item")]
-                    :child {:label (By/className "mm-recipes-details__label")
-                            :value (By/className "mm-recipes-details__value")}}
-   :ingredient-item {:query [(By/className "mm-recipes-structured-ingredients__list-item")]
-                     :child {:quantity (By/xpath ".//span[@data-ingredient-quantity]")
-                             :unit (By/xpath ".//span[@data-ingredient-unit]")
-                             :name (By/xpath ".//span[@data-ingredient-name]")}}
-   :gallery {:query [(By/xpath "//figure[contains(@class,'mntl-universal-image')]/div/img")]
+   :recipe-details {:query [(query/->Query :class-name "mm-recipes-details__item")]
+                    :child {:label (query/->Query :class-name "mm-recipes-details__label")
+                            :value (query/->Query :class-name "mm-recipes-details__value")}}
+   :ingredient-item {:query [(query/->Query :class-name "mm-recipes-structured-ingredients__list-item")]
+                     :child {:quantity (query/->Query :xpath ".//span[@data-ingredient-quantity]")
+                             :unit (query/->Query :xpath ".//span[@data-ingredient-unit]")
+                             :name (query/->Query :xpath ".//span[@data-ingredient-name]")}}
+   :gallery {:query [(query/->Query :xpath "//figure[contains(@class,'mntl-universal-image')]/div/img")]
              :child {:img-src #(get-attribute % "data-src")}}
-   :related-pages {:query (By/className "mntl-recirc-section__content")
+   :related-pages {:query (query/->Query :class-name "mntl-recirc-section__content")
                                      :child {:listed-card listed-card}}
-   :recipe {:child {:recipe-details {:query [(By/className "mm-recipes-details__item")]
-                                     :child {:label (By/className "mm-recipes-details__label")
-                                             :value (By/className "mm-recipes-details__value")}}
-                    :ingredient-item {:query [(By/className "mm-recipes-structured-ingredients__list-item")]
-                                      :child {:quantity (By/xpath ".//span[@data-ingredient-quantity]")
-                                              :unit (By/xpath ".//span[@data-ingredient-unit]")
-                                              :name (By/xpath ".//span[@data-ingredient-name]")}}
-                    :recipe-steps {:query [(By/xpath "//div[contains(@class,'mm-recipes-steps')]/ol/li")]
-                                   :child {:text (By/xpath "p")
-                                           :img-src {:query (By/tagName "img")
+   :recipe {:child {:recipe-details {:query [(query/->Query :class-name "mm-recipes-details__item")]
+                                     :child {:label (query/->Query :class-name "mm-recipes-details__label")
+                                             :value (query/->Query :class-name "mm-recipes-details__value")}}
+                    :ingredient-item {:query [(query/->Query :class-name "mm-recipes-structured-ingredients__list-item")]
+                                      :child {:quantity (query/->Query :xpath ".//span[@data-ingredient-quantity]")
+                                              :unit (query/->Query :xpath ".//span[@data-ingredient-unit]")
+                                              :name (query/->Query :xpath ".//span[@data-ingredient-name]")}}
+                    :recipe-steps {:query [(query/->Query :xpath "//div[contains(@class,'mm-recipes-steps')]/ol/li")]
+                                   :child {:text (query/->Query :xpath "p")
+                                           :img-src {:query (query/->Query :tag-name "img")
                                                      :parser #(get-attribute % "data-src")}}}
-                    :servings {:query (By/xpath "//tr[contains(@class,'mm-recipes-nutrition-facts-label__servings')]/th/span[2]")
+                    :servings {:query (query/->Query :xpath "//tr[contains(@class,'mm-recipes-nutrition-facts-label__servings')]/th/span[2]")
                                :parser parse-number}
-                    :calories {:query (By/xpath "//tr[contains(@class,'mm-recipes-nutrition-facts-label__calories')]/th/span[2]")
+                    :calories {:query (query/->Query :xpath "//tr[contains(@class,'mm-recipes-nutrition-facts-label__calories')]/th/span[2]")
                                :parser parse-number}
-                    :nutritional-facts {:query [(By/xpath "//tbody[contains(@class,'mm-recipes-nutrition-facts-label__table-body')]/tr[position() > 1]")]
-                                        :child {:name (By/xpath "td[1]/span")
-                                                :quantity {:query (By/xpath "td[1]")
-                                                           :parser #(let [text (get-text %)]
-                                                                      (str/trim (subs text (+ (str/index-of text "</span>") (count "</span>")))))}
-                                                :percent (By/xpath "td[2]")}}}}
-   :recipe-list {:child {:list-page-item {:query [(By/xpath "//a[contains(@class,'mntl-taxonomy-nodes__link ')]")]
+                    :nutritional-facts {:query [(query/->Query :xpath "//tbody[contains(@class,'mm-recipes-nutrition-facts-label__table-body')]/tr[position() > 1]")]
+                                        :child {:name (query/->Query :xpath "td[1]/span")
+                                                :quantity (query/->Query :xpath "td[1]/text()[last()]")
+                                                :percent (query/->Query :xpath "td[2]")}}}}
+   :recipe-list {:child {:list-page-item {:query [(query/->Query :xpath "//a[contains(@class,'mntl-taxonomy-nodes__link ')]")]
                                           :parser get-link}
-                         :five-post {:query (By/className "mntl-vertical-list__wrapper")
-                                     :child {:featured {:query [(By/xpath "//a[contains(@class,'mntl-five-post__featured')]")]
+                         :five-post {:query (query/->Query :class-name "mntl-vertical-list__wrapper")
+                                     :child {:featured {:query [(query/->Query :xpath "//a[contains(@class,'mntl-five-post__featured')]")]
                                                         :child card}
                                              :listed-card listed-card}}
-                         :vertical-card-list {:query (By/className "mntl-vertical-list__wrapper")
+                         :vertical-card-list {:query (query/->Query :class-name "mntl-vertical-list__wrapper")
                                               :child {:listed-card listed-card}}
-                         :spotlight {:query (By/className "mntl-document-spotlight")
+                         :spotlight {:query (query/->Query :class-name "mntl-document-spotlight")
                                      :child {:listed-card listed-card}}
-                         :full-list {:query (By/className "mntl-taxonomysc-article-list-group")
+                         :full-list {:query (query/->Query :class-name "mntl-taxonomysc-article-list-group")
                                      :child {:listed-card listed-card}}}}})
    

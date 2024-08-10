@@ -1,4 +1,4 @@
-(ns palatable-pickle.driver 
+(ns palatable-pickle.selenium.driver 
   (:require [clojure.pprint :as pp]
             [clojure.string :as str]) 
   (:import (org.openqa.selenium.chrome
